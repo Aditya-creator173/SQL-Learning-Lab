@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import BlockEditor from './BlockEditor';
+import ColorBends from './ColorBends';
+import PixelCard from './PixelCard';
 import * as Blockly from 'blockly/core';
 import { Play, Database, Wand2, Terminal, ChevronRight, Key, Table, Loader2, Sparkles, Send, LogIn, LogOut, Lock, User, Menu, Settings, FileCode, Box, Moon, Sun, X } from 'lucide-react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
@@ -243,79 +245,98 @@ function LoginScreen({ onLogin, theme, onSwitchToSignUp }) {
   };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center p-4" style={{ backgroundColor: colors.bgTertiary }}>
-      <div className="w-96 backdrop-blur-xl border rounded-2xl shadow-2xl p-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
-        style={{ backgroundColor: colors.bgSecondary + 'cc', borderColor: colors.border }}>
-        {/* Header */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/20">
-            <Database className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
-            SQL Thinking Lab
-          </h1>
-          <p className="text-sm mt-2" style={{ color: colors.textMuted }}>Initialize Your Session</p>
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Username</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                style={{ backgroundColor: colors.bgTertiary, borderColor: colors.border, color: colors.text }}
-                placeholder="Enter username"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                style={{ backgroundColor: colors.bgTertiary, borderColor: colors.border, color: colors.text }}
-                placeholder="Enter password"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-cyan-500/20"
-          >
-            <LogIn className="w-5 h-5" />
-            Initialize Session
-          </button>
-        </form>
-
-        {/* Sign Up Link */}
-        <div className="mt-6 text-center">
-          <p className="text-sm" style={{ color: colors.textSecondary }}>
-            New to SQL Thinking Lab?{' '}
-            <button
-              onClick={onSwitchToSignUp}
-              className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
-            >
-              Create an Account
-            </button>
-          </p>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-2 text-center">
-          <p className="text-xs" style={{ color: colors.textMuted }}>SQL Learning Platform</p>
-        </div>
+    <div className="h-screen w-full flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 z-0">
+        <ColorBends
+          colors={["#ff3366", "#ff6633", "#ffcc33", "#33ff66", "#33ccff", "#6633ff", "#cc33ff", "#ff33cc"]}
+          rotation={30}
+          speed={0.3}
+          scale={1.2}
+          frequency={1.4}
+          warpStrength={1.2}
+          mouseInfluence={0.8}
+          parallax={0.6}
+          noise={0.08}
+          transparent={false}
+        />
       </div>
+
+      {/* Login Form with PixelCard */}
+      <PixelCard variant="blue" className="relative z-10 w-[480px] min-h-[580px]">
+        <div className="w-full h-full backdrop-blur-xl p-10 relative z-10"
+          style={{ backgroundColor: colors.bgSecondary + 'cc' }}>
+          {/* Header */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/20">
+              <Database className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+              SQL Thinking Lab
+            </h1>
+            <p className="text-sm mt-2" style={{ color: colors.textMuted }}>Initialize Your Session</p>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Username</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                  style={{ backgroundColor: colors.bgTertiary, borderColor: colors.border, color: colors.text }}
+                  placeholder="Enter username"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                  style={{ backgroundColor: colors.bgTertiary, borderColor: colors.border, color: colors.text }}
+                  placeholder="Enter password"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-cyan-500/20"
+            >
+              <LogIn className="w-5 h-5" />
+              Initialize Session
+            </button>
+          </form>
+
+          {/* Sign Up Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm" style={{ color: colors.textSecondary }}>
+              New to SQL Thinking Lab?{' '}
+              <button
+                onClick={onSwitchToSignUp}
+                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+              >
+                Create an Account
+              </button>
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-2 text-center">
+            <p className="text-xs" style={{ color: colors.textMuted }}>SQL Learning Platform</p>
+          </div>
+        </div>
+      </PixelCard>
     </div>
   );
 }
@@ -389,137 +410,156 @@ function SignUpScreen({ onSignUp, theme, onSwitchToLogin }) {
   };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center p-4" style={{ backgroundColor: colors.bgTertiary }}>
-      <div className="w-96 backdrop-blur-xl border rounded-2xl shadow-2xl p-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
-        style={{ backgroundColor: colors.bgSecondary + 'cc', borderColor: colors.border }}>
-        {/* Header */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/20">
-            <Database className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
-            SQL Thinking Lab
-          </h1>
-          <p className="text-sm mt-2" style={{ color: colors.textMuted }}>Create Your Account</p>
-        </div>
-
-        {/* Sign Up Form */}
-        <form onSubmit={handleSignUp} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Username</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                style={{
-                  backgroundColor: colors.bgTertiary,
-                  borderColor: errors.username ? '#ef4444' : colors.border,
-                  color: colors.text
-                }}
-                placeholder="Choose a username"
-              />
-            </div>
-            {errors.username && <p className="text-red-400 text-xs mt-1">{errors.username}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Email Address</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                style={{
-                  backgroundColor: colors.bgTertiary,
-                  borderColor: errors.email ? '#ef4444' : colors.border,
-                  color: colors.text
-                }}
-                placeholder="Enter your email"
-              />
-            </div>
-            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                style={{
-                  backgroundColor: colors.bgTertiary,
-                  borderColor: errors.password ? '#ef4444' : colors.border,
-                  color: colors.text
-                }}
-                placeholder="Create a password"
-              />
-            </div>
-            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Confirm Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full border rounded-lg pl-10 pr-4 py-3 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                style={{
-                  backgroundColor: colors.bgTertiary,
-                  borderColor: errors.confirmPassword ? '#ef4444' : colors.border,
-                  color: colors.text
-                }}
-                placeholder="Confirm your password"
-              />
-            </div>
-            {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
-          </div>
-
-          <button
-            type="submit"
-            disabled={successMessage !== ''}
-            className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <User className="w-5 h-5" />
-            Create Account
-          </button>
-
-          {successMessage && (
-            <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-3 text-center animate-in fade-in">
-              <p className="text-green-400 text-sm font-medium">{successMessage}</p>
-            </div>
-          )}
-        </form>
-
-        {/* Sign In Link */}
-        <div className="mt-6 text-center">
-          <p className="text-sm" style={{ color: colors.textSecondary }}>
-            Already have an account?{' '}
-            <button
-              onClick={onSwitchToLogin}
-              disabled={successMessage !== ''}
-              className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Sign In
-            </button>
-          </p>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-2 text-center">
-          <p className="text-xs" style={{ color: colors.textMuted }}>SQL Learning Platform</p>
-        </div>
+    <div className="h-screen w-full flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 z-0">
+        <ColorBends
+          colors={["#ff3366", "#ff6633", "#ffcc33", "#33ff66", "#33ccff", "#6633ff", "#cc33ff", "#ff33cc"]}
+          rotation={30}
+          speed={0.3}
+          scale={1.2}
+          frequency={1.4}
+          warpStrength={1.2}
+          mouseInfluence={0.8}
+          parallax={0.6}
+          noise={0.08}
+          transparent={false}
+        />
       </div>
+
+      {/* Sign Up Form with PixelCard */}
+      <PixelCard variant="pink" className="relative z-10 w-[480px] min-h-[720px]">
+        <div className="w-full h-full backdrop-blur-xl p-10 relative z-10"
+          style={{ backgroundColor: colors.bgSecondary + 'cc' }}>
+          {/* Header */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/20">
+              <Database className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+              SQL Thinking Lab
+            </h1>
+            <p className="text-sm mt-2" style={{ color: colors.textMuted }}>Create Your Account</p>
+          </div>
+
+          {/* Sign Up Form */}
+          <form onSubmit={handleSignUp} className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Username</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full border rounded-lg pl-10 pr-4 py-2 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                  style={{
+                    backgroundColor: colors.bgTertiary,
+                    borderColor: errors.username ? '#ef4444' : colors.border,
+                    color: colors.text
+                  }}
+                  placeholder="Choose a username"
+                />
+              </div>
+              {errors.username && <p className="text-red-400 text-xs mt-1">{errors.username}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Email Address</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border rounded-lg pl-10 pr-4 py-2 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                  style={{
+                    backgroundColor: colors.bgTertiary,
+                    borderColor: errors.email ? '#ef4444' : colors.border,
+                    color: colors.text
+                  }}
+                  placeholder="Enter your email"
+                />
+              </div>
+              {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border rounded-lg pl-10 pr-4 py-2 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                  style={{
+                    backgroundColor: colors.bgTertiary,
+                    borderColor: errors.password ? '#ef4444' : colors.border,
+                    color: colors.text
+                  }}
+                  placeholder="Create a password"
+                />
+              </div>
+              {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Confirm Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full border rounded-lg pl-10 pr-4 py-2 outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                  style={{
+                    backgroundColor: colors.bgTertiary,
+                    borderColor: errors.confirmPassword ? '#ef4444' : colors.border,
+                    color: colors.text
+                  }}
+                  placeholder="Confirm your password"
+                />
+              </div>
+              {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={successMessage !== ''}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <User className="w-5 h-5" />
+              Create Account
+            </button>
+
+            {successMessage && (
+              <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-3 text-center animate-in fade-in">
+                <p className="text-green-400 text-sm font-medium">{successMessage}</p>
+              </div>
+            )}
+          </form>
+
+          {/* Sign In Link */}
+          <div className="mt-4 text-center">
+            <p className="text-sm" style={{ color: colors.textSecondary }}>
+              Already have an account?{' '}
+              <button
+                onClick={onSwitchToLogin}
+                disabled={successMessage !== ''}
+                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sign In
+              </button>
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-2 text-center">
+            <p className="text-xs" style={{ color: colors.textMuted }}>SQL Learning Platform</p>
+          </div>
+        </div>
+      </PixelCard>
     </div>
   );
 }
@@ -599,7 +639,7 @@ function App() {
     try {
       // Determine which query to use based on active mode
       const queryToExecute = activeMode === 'block' ? blockQuery : query;
-      
+
       if (!queryToExecute.trim()) {
         setResults([{ Error: 'No query to execute. Write SQL or add blocks.' }]);
         setIsLoading(false);
