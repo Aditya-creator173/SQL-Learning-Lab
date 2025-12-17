@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Database, Table, Plus, Trash2, Eraser, Bot, Play, Terminal, Menu, Moon, Sun, FileCode, Box, FileText, Loader2, Sparkles, Send } from 'lucide-react';
+import { Database, Table, Plus, Trash2, Eraser, Wand2, Play, Terminal, Menu, Moon, Sun, FileCode, Box, FileText, Loader2, Sparkles, Send, LogOut } from 'lucide-react';
 
 const ACTIONS = [
     { id: 'CREATE_TABLE', label: 'Create Table', icon: Table, color: 'bg-amber-100 text-amber-900 border-amber-200' },
@@ -11,17 +11,18 @@ const ACTIONS = [
     { id: 'DELETE_VALUES', label: 'Delete Values', icon: Trash2, color: 'bg-orange-100 text-orange-900 border-orange-200' },
 ];
 
-export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onToggleTheme }) {
+export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onToggleTheme, user, onLogout }) {
     const [activeAction, setActiveAction] = useState(null);
     const [formData, setFormData] = useState({});
-    const [aiMessage, setAiMessage] = useState("I'm ready to help you construct your query.");
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [chatInput, setChatInput] = useState('');
+    const [generatedSQL, setGeneratedSQL] = useState('');
+    const [results, setResults] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [chatHistory, setChatHistory] = useState([
+        { role: 'ai', content: 'Welcome to SQL Thinking Lab! I can help you write queries, explain concepts, and optimize your SQL.' }
+    ]);
     const menuRef = useRef(null);
-
-    // Placeholder for loading state and chat history to match App.jsx structure
-    const isLoading = false;
-    const chatHistory = [{ role: 'ai', content: aiMessage }];
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -37,19 +38,112 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
 
     const handleActionClick = (actionId) => {
         setActiveAction(actionId);
-        setFormData({}); // Reset form
-        const actionLabel = ACTIONS.find(a => a.id === actionId).label;
-        setAiMessage(`Selected: ${actionLabel}. Fill in the form above and I'll generate the SQL for you.`);
+        setFormData({});
+        setGeneratedSQL('');
     };
+
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const generateSQL = () => {
+        let sql = '';
+        switch (activeAction) {
+            case 'CREATE_TABLE':
+                const tableName = formData.tableName || 'new_table';
+                const columns = formData.columns || 'id INT PRIMARY KEY, name VARCHAR(100)';
+                sql = `CREATE TABLE ${tableName} (${columns});`;
+                break;
+            case 'CREATE_DATABASE':
+                const dbName = formData.dbName || 'new_database';
+                sql = `CREATE DATABASE ${dbName};`;
+                break;
+            case 'INSERT_VALUES':
+                const insertTable = formData.tableName || 'table_name';
+                const insertColumns = formData.columns || '';
+                const values = formData.values || '';
+                if (insertColumns) {
+                    sql = `INSERT INTO ${insertTable} (${insertColumns}) VALUES (${values});`;
+                } else {
+                    sql = `INSERT INTO ${insertTable} VALUES (${values});`;
+                }
+                break;
+            case 'DELETE_TABLE':
+                const dropTable = formData.tableName || 'table_name';
+                sql = `DROP TABLE ${dropTable};`;
+                break;
+            case 'DELETE_DATABASE':
+                const dropDb = formData.dbName || 'database_name';
+                sql = `DROP DATABASE ${dropDb};`;
+                break;
+            case 'DELETE_VALUES':
+                const deleteTable = formData.tableName || 'table_name';
+                const whereClause = formData.whereClause || '1=1';
+                sql = `DELETE FROM ${deleteTable} WHERE ${whereClause};`;
+                break;
+            default:
+                sql = '';
+        }
+        return sql;
+    };
+
+    const handleRunQuery = async () => {
+        const sql = generateSQL();
+        if (!sql) {
+            setChatHistory(prev => [...prev, { role: 'ai', content: 'Please select an action and fill in the required fields first.' }]);
+            return;
+        }
+
+        setGeneratedSQL(sql);
+        setIsLoading(true);
+        setChatHistory(prev => [...prev, { role: 'ai', content: `Executing: ${sql}` }]);
+
+        try {
+            const response = await fetch('http://localhost:8080/api/sql/raw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sql: sql, dbName: user?.dbName || 'new_project' })
+            });
+
+            if (response.ok) {
+                const json = await response.json();
+                if (Array.isArray(json)) {
+                    setResults(json);
+                    setChatHistory(prev => [...prev, { role: 'ai', content: `✅ Query executed successfully! ${json.length} row(s) returned.` }]);
+                } else {
+                    setResults([{ Result: json }]);
+                    setChatHistory(prev => [...prev, { role: 'ai', content: `✅ ${json}` }]);
+                }
+            } else {
+                const json = await response.json();
+                setResults([{ Error: json.error || 'Query failed' }]);
+                setChatHistory(prev => [...prev, { role: 'ai', content: `❌ Error: ${json.error || 'Query failed'}` }]);
+            }
+        } catch (error) {
+            console.error(error);
+            setResults([{ Error: 'Network Error - Backend may not be running' }]);
+            setChatHistory(prev => [...prev, { role: 'ai', content: '❌ Network Error - Make sure the backend server is running on port 8080.' }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleSendMessage = () => {
         if (!chatInput.trim()) return;
-        // Placeholder for AI chat logic
+        setChatHistory(prev => [
+            ...prev,
+            { role: 'user', content: chatInput },
+            { role: 'ai', content: `I can help you with that! Try selecting an action from the sidebar to construct your SQL query step by step.` }
+        ]);
         setChatInput('');
+    };
+
+    const handleClear = () => {
+        setActiveAction(null);
+        setFormData({});
+        setGeneratedSQL('');
+        setResults(null);
     };
 
     const renderInputForm = () => {
@@ -66,16 +160,21 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                             className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ color: colors.text }}
                             placeholder="e.g., users"
+                            value={formData.tableName || ''}
                             onChange={(e) => handleInputChange('tableName', e.target.value)}
                         />
 
                         <h3 className="text-lg font-bold flex items-center gap-2 mt-6" style={{ color: colors.text }}>
                             <span className="w-6 h-6 rounded bg-amber-100 text-amber-600 flex items-center justify-center text-xs">2</span>
-                            Add Columns:
+                            Define columns:
                         </h3>
-                        <div className="p-4 rounded border border-dashed border-white/20 bg-white/5">
-                            <p className="text-sm opacity-60 italic" style={{ color: colors.textMuted }}>Column definition inputs would go here...</p>
-                        </div>
+                        <textarea
+                            className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500 min-h-[80px]"
+                            style={{ color: colors.text }}
+                            placeholder="e.g., id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(255)"
+                            value={formData.columns || ''}
+                            onChange={(e) => handleInputChange('columns', e.target.value)}
+                        />
                     </div>
                 );
             case 'CREATE_DATABASE':
@@ -90,6 +189,7 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                             className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ color: colors.text }}
                             placeholder="e.g., my_shop_db"
+                            value={formData.dbName || ''}
                             onChange={(e) => handleInputChange('dbName', e.target.value)}
                         />
                     </div>
@@ -106,19 +206,99 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                             className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ color: colors.text }}
                             placeholder="e.g., users"
+                            value={formData.tableName || ''}
                             onChange={(e) => handleInputChange('tableName', e.target.value)}
                         />
                         <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.text }}>
                             <span className="w-6 h-6 rounded bg-violet-100 text-violet-600 flex items-center justify-center text-xs">2</span>
-                            Enter values (comma separated):
+                            Column names (optional):
                         </h3>
                         <input
                             type="text"
                             className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ color: colors.text }}
-                            placeholder="e.g., 'John', 25"
+                            placeholder="e.g., name, email, age"
+                            value={formData.columns || ''}
+                            onChange={(e) => handleInputChange('columns', e.target.value)}
+                        />
+                        <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.text }}>
+                            <span className="w-6 h-6 rounded bg-violet-100 text-violet-600 flex items-center justify-center text-xs">3</span>
+                            Enter values:
+                        </h3>
+                        <input
+                            type="text"
+                            className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            style={{ color: colors.text }}
+                            placeholder="e.g., 'John', 'john@email.com', 25"
+                            value={formData.values || ''}
                             onChange={(e) => handleInputChange('values', e.target.value)}
                         />
+                    </div>
+                );
+            case 'DELETE_TABLE':
+                return (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.text }}>
+                            <span className="w-6 h-6 rounded bg-lime-100 text-lime-600 flex items-center justify-center text-xs">1</span>
+                            Enter table name to delete:
+                        </h3>
+                        <input
+                            type="text"
+                            className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            style={{ color: colors.text }}
+                            placeholder="e.g., old_users"
+                            value={formData.tableName || ''}
+                            onChange={(e) => handleInputChange('tableName', e.target.value)}
+                        />
+                        <p className="text-sm text-red-400">⚠️ This action will permanently delete the table and all its data.</p>
+                    </div>
+                );
+            case 'DELETE_DATABASE':
+                return (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.text }}>
+                            <span className="w-6 h-6 rounded bg-gray-200 text-gray-600 flex items-center justify-center text-xs">1</span>
+                            Enter database name to delete:
+                        </h3>
+                        <input
+                            type="text"
+                            className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            style={{ color: colors.text }}
+                            placeholder="e.g., old_database"
+                            value={formData.dbName || ''}
+                            onChange={(e) => handleInputChange('dbName', e.target.value)}
+                        />
+                        <p className="text-sm text-red-400">⚠️ This action will permanently delete the database and all its tables.</p>
+                    </div>
+                );
+            case 'DELETE_VALUES':
+                return (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.text }}>
+                            <span className="w-6 h-6 rounded bg-orange-100 text-orange-600 flex items-center justify-center text-xs">1</span>
+                            Enter table name:
+                        </h3>
+                        <input
+                            type="text"
+                            className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            style={{ color: colors.text }}
+                            placeholder="e.g., users"
+                            value={formData.tableName || ''}
+                            onChange={(e) => handleInputChange('tableName', e.target.value)}
+                        />
+                        <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.text }}>
+                            <span className="w-6 h-6 rounded bg-orange-100 text-orange-600 flex items-center justify-center text-xs">2</span>
+                            WHERE condition:
+                        </h3>
+                        <input
+                            type="text"
+                            className="w-full p-2 rounded bg-black/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            style={{ color: colors.text }}
+                            placeholder="e.g., id = 5 OR status = 'inactive'"
+                            value={formData.whereClause || ''}
+                            onChange={(e) => handleInputChange('whereClause', e.target.value)}
+                        />
+                        <p className="text-sm text-red-400">⚠️ This will delete all rows matching the WHERE condition.</p>
                     </div>
                 );
             default:
@@ -166,7 +346,7 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                         {/* 2a. Top: Toolbar & Inputs (60%) */}
                         <Panel defaultSize={60} minSize={30}>
                             <div className="h-full flex flex-col" style={{ backgroundColor: colors.bg }}>
-                                {/* Toolbar (Matches App.jsx) */}
+                                {/* Toolbar */}
                                 <div className="px-4 py-2 backdrop-blur-sm flex items-center gap-3 relative z-50 border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}>
                                     <button
                                         onClick={onToggleTheme}
@@ -220,15 +400,34 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                                             </div>
                                         )}
                                     </div>
-                                    <span className="ml-2 font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Text SQL Mode</span>
 
-                                    {/* Run Button (Matches App.jsx position) */}
+                                    {/* Generated SQL Preview */}
+                                    {generatedSQL && (
+                                        <div className="flex-1 mx-4 px-3 py-1 rounded bg-black/20 font-mono text-xs truncate" style={{ color: colors.textMuted }}>
+                                            {generatedSQL}
+                                        </div>
+                                    )}
+
+                                    {/* Run and Clear Buttons */}
                                     <div className="flex items-center gap-2 ml-auto">
                                         <button
-                                            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-semibold flex items-center gap-2 transition-all active:scale-95 hover:scale-110 hover:shadow-lg"
+                                            onClick={handleRunQuery}
+                                            disabled={isLoading}
+                                            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-semibold flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 hover:shadow-lg"
                                         >
-                                            <Play className="w-4 h-4" />
-                                            Generate & Run
+                                            {isLoading ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Play className="w-4 h-4" />
+                                            )}
+                                            Run Query
+                                        </button>
+                                        <button
+                                            onClick={handleClear}
+                                            className="px-3 py-2 rounded-lg transition-all active:scale-95 hover:opacity-80 hover:scale-110 hover:shadow-md"
+                                            style={{ backgroundColor: colors.bgTertiary, color: colors.textSecondary }}
+                                        >
+                                            Clear
                                         </button>
                                     </div>
                                 </div>
@@ -243,21 +442,22 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                             </div>
                         </Panel>
 
-                        <PanelResizeHandle className="h-1 hover:bg-fuchsia-500/50 transition-colors" style={{ backgroundColor: colors.border }} />
+                        <PanelResizeHandle className="h-1 hover:bg-orange-500/50 transition-colors" style={{ backgroundColor: colors.border }} />
 
                         {/* 2b. Bottom: AI Assistant (40%) */}
                         <Panel defaultSize={40} minSize={20} style={{ backgroundColor: colors.bgSecondary }}>
                             <div className="h-full flex flex-col">
                                 <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottomColor: colors.border, borderBottomWidth: '1px' }}>
-                                    <Bot className="w-5 h-5 text-fuchsia-400" />
-                                    <h2 className="font-semibold text-fuchsia-500">AI Assistant</h2>
+                                    <Wand2 className="w-5 h-5 text-orange-400" />
+                                    <h2 className="font-semibold text-orange-500">AI Assistant</h2>
                                 </div>
                                 <div className="flex-1 overflow-auto scrollbar-thin p-4 space-y-3">
                                     {chatHistory.map((msg, idx) => (
-                                        <div key={idx} className={`flex justify-start`}>
-                                            <div className="max-w-[80%] rounded-lg p-3" style={{ color: colors.text, backgroundColor: colors.bgTertiary }}>
-                                                <span className="text-fuchsia-500 mr-2">$</span>
-                                                <span className="text-sm font-mono">{msg.content}</span>
+                                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user' ? '' : 'bg-orange-500/10 backdrop-blur-md border border-orange-500/20'}`}
+                                                style={msg.role === 'user' ? { backgroundColor: colors.bgTertiary, color: colors.text } : { color: colors.text }}>
+                                                {msg.role === 'ai' && <Sparkles className="w-4 h-4 text-orange-400 inline mr-2" />}
+                                                <span className="text-sm">{msg.content}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -275,7 +475,7 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                                         />
                                         <button
                                             onClick={handleSendMessage}
-                                            className="px-4 py-2 bg-fuchsia-500 hover:bg-fuchsia-600 text-white rounded-lg font-semibold transition-all active:scale-95 flex items-center gap-2"
+                                            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all active:scale-95 flex items-center gap-2"
                                         >
                                             <Send className="w-4 h-4" />
                                         </button>
@@ -289,14 +489,69 @@ export default function TextSQL({ theme, colors, onSwitchMode, activeMode, onTog
                 <PanelResizeHandle className="w-1 hover:bg-cyan-500/50 transition-colors" style={{ backgroundColor: colors.border }} />
 
                 {/* 3. RIGHT PANE: Results (30%) */}
-                <Panel defaultSize={30} minSize={20} style={{ backgroundColor: colors.bgTertiary }}>
-                    <div className="h-full flex flex-col p-4">
-                        <div className="flex items-center gap-2 mb-4 pb-2 border-b" style={{ borderColor: colors.border }}>
-                            <Terminal className="w-4 h-4 text-emerald-400" />
-                            <h2 className="font-bold text-sm uppercase tracking-wider" style={{ color: colors.text }}>Results</h2>
+                <Panel defaultSize={30} minSize={20} style={{ backgroundColor: colors.bgSecondary }}>
+                    <div className="h-full flex flex-col">
+                        {/* Header with Logout */}
+                        <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottomColor: colors.border, borderBottomWidth: '1px' }}>
+                            <div className="flex items-center gap-2">
+                                <Terminal className={`w-5 h-5 ${theme === 'light' ? 'text-cyan-600' : 'text-cyan-400'}`} />
+                                <h2 className="font-semibold" style={{ color: colors.text }}>Query Results</h2>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {results && (
+                                    <span className={`px-2 py-1 ${theme === 'light' ? 'bg-cyan-600/10 text-cyan-600 border-cyan-600/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'} text-xs rounded-full border`}>
+                                        {results.length} rows
+                                    </span>
+                                )}
+                                <button
+                                    onClick={onLogout}
+                                    className="px-3 py-1 rounded hover:bg-red-500/10 hover:text-red-500 transition-colors flex items-center gap-2"
+                                    title="Logout"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Logout</span>
+                                </button>
+
+                            </div>
                         </div>
-                        <div className="flex-1 rounded-lg border border-dashed flex items-center justify-center text-sm opacity-40" style={{ borderColor: colors.border, color: colors.textMuted }}>
-                            Query results will appear here...
+
+                        {/* Results Table */}
+                        <div className="flex-1 overflow-auto scrollbar-thin">
+                            {isLoading ? (
+                                <div className="h-full flex items-center justify-center">
+                                    <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                                </div>
+                            ) : results ? (
+                                <table className="w-full text-sm">
+                                    <thead className="sticky top-0" style={{ backgroundColor: colors.bg, borderBottomColor: colors.border, borderBottomWidth: '1px' }}>
+                                        <tr>
+                                            {Object.keys(results[0]).map((key) => (
+                                                <th key={key} className="px-4 py-3 text-left font-semibold font-mono text-xs uppercase tracking-wide" style={{ color: colors.text }}>
+                                                    {key}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="font-mono text-xs">
+                                        {results.map((row, idx) => (
+                                            <tr key={idx} className="hover:opacity-80 transition-colors" style={{ backgroundColor: idx % 2 === 0 ? 'transparent' : colors.bgTertiary + '40', borderBottomColor: colors.border + '40', borderBottomWidth: '1px' }}>
+                                                {Object.values(row).map((value, colIdx) => (
+                                                    <td key={colIdx} className="px-4 py-3" style={{ color: colors.textSecondary }}>
+                                                        {String(value)}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                    <Terminal className="w-16 h-16 mb-4" style={{ color: colors.textMuted, opacity: 0.5 }} />
+                                    <p className="font-semibold" style={{ color: colors.textMuted }}>Ready to Execute</p>
+                                    <p className="text-sm mt-2" style={{ color: colors.textMuted, opacity: 0.7 }}>Select an action and run a query to see results here</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </Panel>
