@@ -100,8 +100,8 @@ const VARIANTS = {
     },
     blue: {
         activeColor: '#e0f2fe',
-        gap: 10,
-        speed: 25,
+        gap: 5,
+        speed: 35,
         colors: '#e0f2fe,#7dd3fc,#0ea5e9',
         noFocus: false
     },
@@ -201,10 +201,10 @@ export default function PixelCard({ variant = 'default', gap, speed, colors, noF
     const onMouseEnter = () => {
         clearTimeout(timeoutRef.current);
         handleAnimation('appear');
-        // Auto-disappear after 2.5 seconds
+        // Auto-disappear after delay
         timeoutRef.current = setTimeout(() => {
             handleAnimation('disappear');
-        }, 700);
+        }, 2000);
     };
     const onMouseLeave = () => {
         clearTimeout(timeoutRef.current);
@@ -216,7 +216,7 @@ export default function PixelCard({ variant = 'default', gap, speed, colors, noF
         handleAnimation('appear');
         timeoutRef.current = setTimeout(() => {
             handleAnimation('disappear');
-        }, 700);
+        }, 2000);
     };
     const onBlur = e => {
         if (e.currentTarget.contains(e.relatedTarget)) return;
